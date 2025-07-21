@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Amazon Unaffiliate</title>
+  <style>
+    body {
+      width: 300px;
+      padding: 10px;
+      font-family: Arial, sans-serif;
+    }
+    .container {
+      text-align: center;
+    }
+    .status {
+      margin-top: 10px;
+      padding: 8px;
+      background-color: #e8f5e9;
+      border-radius: 4px;
+      border: 1px solid #c8e6c9;
+    }
+    .info {
+      margin-top: 15px;
+      font-size: 0.9em;
+      color: #555;
+    }
+    .active {
+      color: #2e7d32;
+      font-weight: bold;
+    }
+    .stats {
+      margin-top: 10px;
+      text-align: left;
+      padding: 8px;
+      background-color: #f5f5f5;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Amazon Unaffiliate</h2>
+    <p>This extension automatically removes affiliate tags and query parameters from Amazon links.</p>
+    
+    <div class="status">
+      <p>Status: <span id="status" class="active">Active</span></p>
+    </div>
+    
+    <div class="stats">
+      <p>Links cleaned on this page: <span id="cleaned-count">0</span></p>
+      <p>Total links cleaned: <span id="total-count">0</span></p>
+    </div>
+    
+    <div class="info">
+      <p>Click on any Amazon link and affiliate tags will be automatically removed.</p>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

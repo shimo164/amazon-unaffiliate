@@ -1,0 +1,48 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "transform": {
+          "queryTransform": {
+            "removeParams": ["tag"]
+          }
+        }
+      }
+    },
+    "condition": {
+      "urlFilter": "*amazon*",
+      "resourceTypes": ["main_frame"]
+    }
+  },
+  {
+    "id": 2,
+    "priority": 2,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "regexSubstitution": "\\1/dp/\\2/"
+      }
+    },
+    "condition": {
+      "regexFilter": "(https?://(?:[^/]+\\.)?amazon\\.[^/]+).*?/dp/(\\w+).*",
+      "resourceTypes": ["main_frame"]
+    }
+  },
+  {
+    "id": 3,
+    "priority": 2,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "regexSubstitution": "\\1/gp/product/\\2/"
+      }
+    },
+    "condition": {
+      "regexFilter": "(https?://(?:[^/]+\\.)?amazon\\.[^/]+).*?/gp/product/(\\w+).*",
+      "resourceTypes": ["main_frame"]
+    }
+  }
+]
