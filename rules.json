@@ -13,7 +13,7 @@
       }
     },
     "condition": {
-      "urlFilter": "*amazon*",
+      "regexFilter": "^https?://(?:[^/]+\\.)*amazon\\.(?:com|co\\.jp|co\\.uk|de|fr|it|es|ca)/.*[?&]tag=",
       "resourceTypes": ["main_frame"]
     }
   },
@@ -27,7 +27,7 @@
       }
     },
     "condition": {
-      "regexFilter": "(https?://(?:[^/]+\\.)?amazon\\.[^/]+).*?/dp/(\\w+).*",
+      "regexFilter": "(https?://(?:[^/]+\\.)*amazon\\.(?:com|co\\.jp|co\\.uk|de|fr|it|es|ca)).*?/dp/([A-Za-z0-9]{10})(?:[/?#].*)?",
       "resourceTypes": ["main_frame"]
     }
   },
@@ -41,7 +41,7 @@
       }
     },
     "condition": {
-      "regexFilter": "(https?://(?:[^/]+\\.)?amazon\\.[^/]+).*?/gp/product/(\\w+).*",
+      "regexFilter": "(https?://(?:[^/]+\\.)*amazon\\.(?:com|co\\.jp|co\\.uk|de|fr|it|es|ca)).*?/gp/product/([A-Za-z0-9]{10})(?:[/?#].*)?",
       "resourceTypes": ["main_frame"]
     }
   }

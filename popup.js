@@ -1,4 +1,35 @@
 // Amazon Unaffiliate - popup script
+const AMAZON_DOMAINS = [
+  "amazon.com",
+  "amazon.co.jp",
+  "amazon.co.uk",
+  "amazon.de",
+  "amazon.fr",
+  "amazon.it",
+  "amazon.es",
+  "amazon.ca"
+];
+
+function matchesAllowedHost(hostname, allowedHosts) {
+  const normalizedHostname = hostname.toLowerCase();
+
+  return allowedHosts.some((allowedHost) => {
+    return (
+      normalizedHostname === allowedHost ||
+      normalizedHostname.endsWith(`.${allowedHost}`)
+    );
+  });
+}
+
+function isAmazonPage(url) {
+  try {
+    const urlObj = new URL(url);
+    return matchesAllowedHost(urlObj.hostname, AMAZON_DOMAINS);
+  } catch (error) {
+    return false;
+  }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   console.log("Popup opened");
   
@@ -21,7 +52,7 @@ document.addEventListener('DOMContentLoaded', function() {
       console.log("Active tab:", activeTab.url);
       
       // Check if the current page is Amazon
-      const isAmazon = activeTab.url.includes('amazon.');
+      const isAmazon = isAmazonPage(activeTab.url);
       if (isAmazon) {
         document.getElementById('status').textContent = 'Active (Amazon page detected)';
         
@@ -33,6 +64,8 @@ document.addEventListener('DOMContentLoaded', function() {
           <p>Current URL: ${activeTab.url}</p>
         `;
         document.querySelector('.container').appendChild(debugInfo);
+      } else {
+        document.getElementById('status').textContent = 'Inactive (not an Amazon page)';
       }
     }
   });

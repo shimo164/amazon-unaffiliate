@@ -35,6 +35,21 @@ let stats = {
   lastPageCleaned: 0
 };
 
+function matchesAllowedHost(hostname, allowedHosts) {
+  const normalizedHostname = hostname.toLowerCase();
+
+  return allowedHosts.some((allowedHost) => {
+    return (
+      normalizedHostname === allowedHost ||
+      normalizedHostname.endsWith(`.${allowedHost}`)
+    );
+  });
+}
+
+function isValidAmazonProductId(productId) {
+  return /^[A-Z0-9]{10}$/i.test(productId);
+}
+
 // Load saved statistics
 chrome.storage.local.get(['totalCleaned'], function(result) {
   if (result.totalCleaned) {
@@ -64,7 +79,7 @@ chrome.webNavigation.onBeforeNavigate.addListener(function() {
 function isAmazonUrl(url) {
   try {
     const urlObj = new URL(url);
-    return AMAZON_DOMAINS.some(domain => urlObj.hostname.includes(domain));
+    return matchesAllowedHost(urlObj.hostname, AMAZON_DOMAINS);
   } catch (e) {
     console.error("Error parsing URL:", e);
     return false;
@@ -75,7 +90,7 @@ function isAmazonUrl(url) {
 function isShortenerUrl(url) {
   try {
     const urlObj = new URL(url);
-    return URL_SHORTENERS.some(domain => urlObj.hostname.includes(domain));
+    return matchesAllowedHost(urlObj.hostname, URL_SHORTENERS);
   } catch (e) {
     console.error("Error parsing URL:", e);
     return false;
@@ -87,9 +102,14 @@ function cleanAmazonUrl(url) {
   try {
     const urlObj = new URL(url);
     const originalUrl = url;
+
+    if (!matchesAllowedHost(urlObj.hostname, AMAZON_DOMAINS)) {
+      console.log("No affiliate found.");
+      return url;
+    }
     
-    // Check if this is a product page URL (contains /dp/ or /gp/)
-    if (urlObj.pathname.includes('/dp/') || urlObj.pathname.includes('/gp/')) {
+    // Check if this is a product page URL (contains /dp/ or /gp/product/)
+    if (urlObj.pathname.includes('/dp/') || urlObj.pathname.includes('/gp/product/')) {
       // Extract the base product URL without query parameters
       let productId = '';
       let pathPrefix = '';
@@ -100,8 +120,8 @@ function cleanAmazonUrl(url) {
         pathPrefix = '/dp/';
         const pathAfterDp = urlObj.pathname.substring(dpIndex + 4); // +4 to skip '/dp/'
         productId = pathAfterDp.split('/')[0];
-      } else if (urlObj.pathname.includes('/gp/')) {
-        const gpIndex = urlObj.pathname.indexOf('/gp/');
+      } else if (urlObj.pathname.includes('/gp/product/')) {
+        const gpIndex = urlObj.pathname.indexOf('/gp/product/');
         pathPrefix = '/gp/product/';
         const pathAfterGp = urlObj.pathname.substring(gpIndex + 12); // +12 to skip '/gp/product/'
         if (pathAfterGp && pathAfterGp.length > 0) {
@@ -109,8 +129,8 @@ function cleanAmazonUrl(url) {
         }
       }
       
-      // If we found a product ID, construct a clean URL
-      if (productId) {
+      // Only canonicalize valid ASIN-style IDs.
+      if (isValidAmazonProductId(productId)) {
         const cleanUrl = `${urlObj.protocol}//${urlObj.host}${pathPrefix}${productId}/`;
         
         // If URL was changed, update stats
@@ -135,6 +155,7 @@ function cleanAmazonUrl(url) {
       return urlObj.toString();
     }
     
+    console.log("No affiliate found.");
     return url;
   } catch (e) {
     console.error("Error cleaning URL:", e);

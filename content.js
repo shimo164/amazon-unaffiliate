@@ -32,11 +32,26 @@ const URL_SHORTENERS = [
 // Counter for cleaned links
 let cleanedLinksCount = 0;
 
+function matchesAllowedHost(hostname, allowedHosts) {
+  const normalizedHostname = hostname.toLowerCase();
+
+  return allowedHosts.some((allowedHost) => {
+    return (
+      normalizedHostname === allowedHost ||
+      normalizedHostname.endsWith(`.${allowedHost}`)
+    );
+  });
+}
+
+function isValidAmazonProductId(productId) {
+  return /^[A-Z0-9]{10}$/i.test(productId);
+}
+
 // Function to check if a URL is from Amazon
 function isAmazonUrl(url) {
   try {
-    const urlObj = new URL(url);
-    return AMAZON_DOMAINS.some(domain => urlObj.hostname.includes(domain));
+    const urlObj = new URL(url, window.location.href);
+    return matchesAllowedHost(urlObj.hostname, AMAZON_DOMAINS);
   } catch (e) {
     return false;
   }
@@ -45,21 +60,23 @@ function isAmazonUrl(url) {
 // Function to check if a URL is a shortener
 function isShortenerUrl(url) {
   try {
-    const urlObj = new URL(url);
-    return URL_SHORTENERS.some(domain => urlObj.hostname.includes(domain));
+    const urlObj = new URL(url, window.location.href);
+    return matchesAllowedHost(urlObj.hostname, URL_SHORTENERS);
   } catch (e) {
     return false;
   }
 }
 
 // Function to clean Amazon URL by removing all query parameters
-function cleanAmazonUrl(url) {
+function cleanAmazonUrl(url, options = {}) {
+  const { logNoAffiliate = true } = options;
+
   try {
-    const urlObj = new URL(url);
+    const urlObj = new URL(url, window.location.href);
     const originalUrl = url;
     
-    // Check if this is a product page URL (contains /dp/ or /gp/)
-    if (urlObj.pathname.includes('/dp/') || urlObj.pathname.includes('/gp/')) {
+    // Check if this is a product page URL (contains /dp/ or /gp/product/)
+    if (urlObj.pathname.includes('/dp/') || urlObj.pathname.includes('/gp/product/')) {
       // Extract the base product URL without query parameters
       let productId = '';
       let pathPrefix = '';
@@ -70,8 +87,8 @@ function cleanAmazonUrl(url) {
         pathPrefix = '/dp/';
         const pathAfterDp = urlObj.pathname.substring(dpIndex + 4); // +4 to skip '/dp/'
         productId = pathAfterDp.split('/')[0];
-      } else if (urlObj.pathname.includes('/gp/')) {
-        const gpIndex = urlObj.pathname.indexOf('/gp/');
+      } else if (urlObj.pathname.includes('/gp/product/')) {
+        const gpIndex = urlObj.pathname.indexOf('/gp/product/');
         pathPrefix = '/gp/product/';
         const pathAfterGp = urlObj.pathname.substring(gpIndex + 12); // +12 to skip '/gp/product/'
         if (pathAfterGp && pathAfterGp.length > 0) {
@@ -79,8 +96,8 @@ function cleanAmazonUrl(url) {
         }
       }
       
-      // If we found a product ID, construct a clean URL
-      if (productId) {
+      // Only canonicalize valid ASIN-style IDs.
+      if (isValidAmazonProductId(productId)) {
         const cleanUrl = `${urlObj.protocol}//${urlObj.host}${pathPrefix}${productId}/`;
         
         // If URL was changed, increment counter
@@ -106,7 +123,11 @@ function cleanAmazonUrl(url) {
       
       return urlObj.toString();
     }
-    
+
+    if (logNoAffiliate) {
+      console.log("No affiliate found.");
+    }
+
     return url;
   } catch (e) {
     return url;
@@ -122,19 +143,23 @@ function processLinks() {
     const href = link.getAttribute('href');
     
     if (!href) continue;
+    if (link.dataset.unaffiliateLastHref === href) continue;
     
     // Handle Amazon links
     if (isAmazonUrl(href)) {
-      const cleanUrl = cleanAmazonUrl(href);
+      const cleanUrl = cleanAmazonUrl(href, { logNoAffiliate: false });
       if (cleanUrl !== href) {
         link.setAttribute('href', cleanUrl);
         link.setAttribute('data-unaffiliated', 'true');
       }
+
+      link.dataset.unaffiliateLastHref = link.getAttribute('href') || href;
     }
     // Handle potential shortened URLs
     else if (isShortenerUrl(href)) {
       // Mark shortened URLs for special handling on click
       link.setAttribute('data-shortened', 'true');
+      link.dataset.unaffiliateLastHref = href;
     }
   }
 }
@@ -215,9 +240,6 @@ if (document.readyState === 'loading') {
 
 // Process links as soon as possible, even before the DOM is fully loaded
 processLinks();
-
-// Also process links periodically
-setInterval(processLinks, 1000);
 
 // Log that the content script is running
 console.log("Amazon Unaffiliate content script is running");
